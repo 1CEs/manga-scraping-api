@@ -1,0 +1,1 @@
+type TopChartSelector = "DEFAULT" | "WEEKLY" | "MONTHLY" | "ALL"
