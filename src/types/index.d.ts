@@ -1,1 +1,1 @@
-type TopChartSelector = "DEFAULT" | "WEEKLY" | "MONTHLY" | "ALL"
+type TopChartSelector = "DEFAULT" | "WEEKLY" | "MONTHLY" | "ALLTIME"

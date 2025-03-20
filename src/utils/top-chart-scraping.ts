@@ -9,11 +9,46 @@ export class TCScraping extends Scraping {
 
     scraping = async () => {
         switch (this.selector) {
-            case "DEFAULT": return this.default()
+            case "DEFAULT": return this.byDefault()
+            default: return this.byCategory(this.selector)
         }
     }
 
-    private default = async () => {
+    private byCategory = async (sel: TopChartSelector) => {
+        const tcWrappers = await this.page.$(`.wpop-${sel.toLowerCase()}`)
+        if (!tcWrappers) {
+            console.error("Error: .popconslide not found");
+            return;
+        }
+
+        const boxesEl = await tcWrappers.$$("ul > li");
+        if (!boxesEl) return;
+
+        let mangas: Array<Object> = [];
+        for (let i = 0; i < boxesEl.length; i++) {
+            const box = boxesEl[i];
+
+            if (!box) return;
+
+            const title = await box.$eval("div.leftseries > h2 > a.series", a => a.innerText);
+            const thumb = await box.$eval("div.imgseries > a.series > img", img => img.src);
+            const rating = await box.$eval("div.leftseries > div.rt > div.rating > div.numscore", div => div.innerText);
+
+            const genreEls = await box.$$("div.leftseries > span > a");
+            let genres: Array<string> = []
+
+            for(let i: number = 0; i < genreEls.length; i++) {
+                const genreEl = genreEls[i]
+                const genre = await genreEl?.evaluate(a => a.innerText)
+                genres = [...genres, genre]
+            }
+
+            mangas = [...mangas, { title, thumb, genres, rating }];
+        }
+        return mangas;
+    }
+
+    private byDefault = async () => {
         const tcWrappers = await this.page.$(".popconslide");
         if (!tcWrappers) {
             console.error("Error: .popconslide not found");
@@ -35,8 +70,6 @@ export class TCScraping extends Scraping {
             const type = await box.$eval("div.bsx > a > div.limit > span", span => span.innerText);
             const rating = await box.$eval("div.bsx > a > div.bigor > div.adds > div.rt > div > div.numscore", div => div.innerText);
 
-            console.log(title);
-
             mangas = [...mangas, { title, eps, thumb, type, rating }];
         }
         return mangas;
@@ -45,7 +78,7 @@ export class TCScraping extends Scraping {
 }
 
 (async () => {
-    const tcs = new TCScraping("https://speed-manga.com/")
+    const tcs = new TCScraping("https://speed-manga.com/", "WEEKLY")
     await tcs.init()
     const mangas = await tcs.scraping()
     console.log(mangas)
